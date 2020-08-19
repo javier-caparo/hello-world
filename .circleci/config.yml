@@ -41,6 +41,30 @@ jobs:
            name: "echo an env var that is part of our project"
            command: |
               echo $MY_NAME
+   
+  test_fail:
+    docker:
+      - image: cimg/base:2020.01
+    steps:
+      - run:
+          name: Testing application
+          command: make test
+          shell: /bin/bash
+          working_directory: ~/my-app
+          no_output_timeout: 30m
+          environment:
+          FOO: bar
+
+      - run: echo 127.0.0.1 devhost | sudo tee -a /etc/hosts
+
+      - run: |
+          sudo -u root createuser -h localhost --superuser ubuntu &&
+          sudo createdb -h localhost test_db
+
+      - run:
+          name: Upload Failed Tests
+          command: curl --data fail_tests.log http://example.com/error_logs
+          when: on_fail
            
 workflows:
   # Name the workflow "welcome"
@@ -55,3 +79,4 @@ workflows:
       - print_my_name:
           requires:
             - print_output_file
+      - test_fail
